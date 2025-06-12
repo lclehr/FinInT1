@@ -427,7 +427,7 @@ def FCFF_func():
         "Discount Factor"
     ]
 
-    decimal_rows = ["sales_to_capital"]
+    decimal_rows = ["Sales To Capital"]
     # Apply formatting to percentage rows
     return_df.loc[percent_rows] = return_df.loc[percent_rows].applymap(lambda x: f"{x:.1%}")
     
