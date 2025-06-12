@@ -152,12 +152,6 @@ nvda_roic = [
 ]
 
 
-#MARKET VALUE OF DEBT (FUNCTION)
-#REVENUE, EBIT, LTD, INVESTED CAP (NVIDIA)
-#
-
-
-
 #Actual Data from MSFT in Dictionary for easy access
 MSFT =  {"Revenue": 245122, 
         "EBIT": 109433,
