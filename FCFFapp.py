@@ -15,7 +15,7 @@ from matplotlib.ticker import FuncFormatter
 #st.set_page_config(layout="wide")
 st.title("Reverse FCFF")
 
-# Inject CSS overrides
+# Inject CSS overrides to get colors of our favourite private bank ;)
 st.markdown("""
     <style>
     html, body, [class*="css"] {
@@ -69,7 +69,7 @@ st.markdown("""
 ###############################################################
 
 
-# Historical Values for MSFT
+# Historical Values for MSFT and NVDA
 
 revenue_MSFT = [
     93580,
@@ -124,7 +124,7 @@ nvda_ebit = [
     32972,
     81453
 ]
-
+#ROIC for MSFT and NVDA
 msft_roic = [
     10.2488,
     15.7513,
@@ -152,7 +152,7 @@ nvda_roic = [
 ]
 
 
-#Actual Data from MSFT in Dictionary for easy access
+#Current Data from MSFT in Dictionary for easy access
 MSFT =  {"Revenue": 245122, 
         "EBIT": 109433,
         "TaxRate": 0.1820,
@@ -166,7 +166,7 @@ MSFT =  {"Revenue": 245122,
        "Historic EBIT": msft_ebit,
         "Ticker": "MSFT"}
 
-#Actual Data fro NVDA in Dictionary for easy access
+#Current Data fro NVDA in Dictionary for easy access. Sources Bloomberg and Annual Statement
 NVDA = {"Revenue": 130497, 
         "EBIT": 75605,
         "TaxRate": 0.1326,
@@ -227,6 +227,7 @@ def plot_saeulendiagramm(categories, values, title):
         xticks = [x for x in categories if x[:4].isdigit() and int(x[:4]) % 5 == 0]
         ax.set_xticks(xticks)
     plt.tight_layout()
+    #Different colors for the historicals and estimation
     green_patch = mpatches.Patch(color='green', label='Historical Values')
     red_patch = mpatches.Patch(color='red', label='Estimated Values')
     ax.legend(handles=[green_patch, red_patch], fontsize = 8)
@@ -249,24 +250,33 @@ years = list(range(2005,2025+10))
 
 def FCFF_func():
     
-    #calcualte decrease in revenue growth
+    #Revenue Calculations
+    #######################################
+   
+    #initialize lists related to revenue
+    revenue = []
+    revenue_growth_amt = []
+    revenue_growth = []
+
+    #calcualte decrease in revenue growth for years 6 to 10
     revenue_subtract = (revenue_growth_start-revenue_growth_end)/5
     
-    revenue_growth = []
-    
+    #fill revenue growth list
     for i in range(10):
         if i < 5:
             revenue_growth.append(revenue_growth_start)
         else:
             revenue_growth.append(revenue_growth_start-(i-4)*revenue_subtract)
     
-    revenue = []
-    revenue_growth_amt = []
+    
     revenue_start = current_company["Revenue"]
     for i in range(len(revenue_growth)):
         revenue.append(revenue_start*(1+revenue_growth[i]))
         revenue_start = revenue[i]    
         revenue_growth_amt.append(revenue_start*(1+revenue_growth[i])-revenue_start)
+    
+    
+    
     #Fill list for operational margin with input margin by looping
     op_margin = []
     for i in range(10):
@@ -276,40 +286,49 @@ def FCFF_func():
     revenue = np.array(revenue)
     op_margin = np.array(op_margin)
     revenue_growth_amt = np.array(revenue_growth_amt)
+    
     #calculate Ebit
     ebit = op_margin * revenue
     
     #calculate after Tax EBit
     ebit_after_tax = ebit * (1 - current_company["TaxRate"])
     
-    #Fill list for reinvestment rate
-    
+    #Reinvestment Calculations
+    ####################################
+    reinvestment_amt = []
     sales_to_capital = []
     for i in range(10):
         sales_to_capital.append(current_company["Sales to Capital"])
     
-    reinvestment_amt = []
     reinvestment_amt = np.array(reinvestment_amt)
     reinvestment_amt = revenue_growth_amt / sales_to_capital
+    
     #Calculate free cashflow to the firm
     ebit_after_tax = np.array(ebit_after_tax)
     FCFF = ebit_after_tax - reinvestment_amt
     
-    #Calculate Cost of Capital
-    
-    Capital_Cost_subtract = (Capital_Cost_start-Capital_Cost_end)/5
+    #Cost of Capital Calculations
+    ####################################
     Capital_Cost = []
+    Discount_Factor = []
+
+    #linear interpolation between the different waccs
+    Capital_Cost_subtract = (Capital_Cost_start-Capital_Cost_end)/5
+
+    #get CoC per year
     for i in range(10):
         if i < 5:
             Capital_Cost.append(Capital_Cost_start)
         else:
             Capital_Cost.append(Capital_Cost_start-(i-4)*Capital_Cost_subtract)
     
-    Discount_Factor = []
+    # get Discount Factor
     for i in range(10):
         x = 1 / (Capital_Cost[i]+1)**(i+1)
         Discount_Factor.append(x)
-            
+
+
+    #Use DCF to get NPV
     PV_FCFF = FCFF * Discount_Factor
     NPV_10 = sum(PV_FCFF)
     
@@ -319,15 +338,19 @@ def FCFF_func():
     #Model TV Period
     
     ###############################################################
+    
     growth_TV = revenue_growth_end
     revenue_TV = revenue[-1] * (1 + revenue_growth_end)
     ebit_TV = revenue_TV * op_margin[-1]
     ebit_after_tax_TV = ebit_TV * (1 - current_company["TaxRate"])
-    reinvestment_TV = growth_TV / TV_ROIC * ebit_after_tax_TV    ######Ebit after Tax 
+
+
+    #calculate reinvestment according to damodaran, using growth and ROIC in TV as inputs
+    reinvestment_TV = growth_TV / TV_ROIC * ebit_after_tax_TV 
+
+    #From FCFF TV to NPV of TV
     FCFF_TV = ebit_after_tax_TV - reinvestment_TV
     CoC_TV = Capital_Cost[-1]
-    
-    
     TV = FCFF_TV / (CoC_TV - growth_TV)
     NPV_TV = TV * Discount_Factor[-1]
     
@@ -349,28 +372,30 @@ def FCFF_func():
     # Reverse FCF Part
     
     #############################################################
-    
+
+    #Use invested cap, tax rate and average invested cap to get the implicit ROIC assumption
     invested_cap = []
+    avg_invested_cap = []
+    tax_rate = []
+    
     invested_cap.append(current_company["Invested Capital"])
     
     for i in range(10):
         x = invested_cap[i] + reinvestment_amt[i]
         invested_cap.append(x)
     
-    avg_invested_cap = []
-    
     for i in range(len(invested_cap)-1):
         x = (invested_cap[i] + invested_cap[i+1])/ 2
         avg_invested_cap.append(x)
     
     roic = ebit_after_tax / avg_invested_cap
-    tax_rate = []
+    
     for i in range(10):
         tax_rate.append(current_company["TaxRate"])
 
     #############################################################
     
-    # Bulding Out Put DataFrames
+    # Bulding Out-Put DataFrames
     
     ############################################################# 
 
@@ -410,7 +435,7 @@ def FCFF_func():
         if row not in percent_rows:
             return_df.loc[row] = return_df.loc[row].apply(lambda x: f"{round(x):,}")
     
-    # Second Data Frame with the final Scalar Values    
+    # Second Data Frame with the Values for Terminal Value period and the final share price etc.    
     TV_period_Data = [
         ("I. Sum of the PV of FCFF in the next 10 years", NPV_10),
         ("Revenue TV Period",revenue_TV),
@@ -482,9 +507,10 @@ def FCFF_func():
                 lambda x: f"{round(x):,}" if pd.notna(x) else ""
             )
 
-    #
+    #print PPS
     st.markdown(f"### :green[Fair Value per Share:] **{PPS:.2f} $**")
 
+    #get company ticker and call Yahoo Finance API to get current stock price for a comparison
     ticker = current_company["Ticker"]
     try:
         stock_price = yf.Ticker(ticker).history(period="1d")["Close"].iloc[-1]
@@ -500,7 +526,7 @@ def FCFF_func():
         st.markdown(f"### :green[Unable to connect to Yahoo Finance]")
         st.caption(f"The real-time stock data can be found at Yahoo Finance\n(https://finance.yahoo.com/quote/{ticker})", unsafe_allow_html=True)
 
-    #return the dfs
+    #return the dfs and do some formatting in streamlit
     st.write("")
     st.subheader("DCF for the next 10 years")
     st.dataframe(return_df)
@@ -512,7 +538,8 @@ def FCFF_func():
     st.dataframe(return_df3, height = 154)
     st.write("")
     st.subheader("Graphics")
-    #call plot function with correct values to plot Revenue estimation
+    
+    #call plot function with correct values to plot Revenue estimation and ROIC estemation
     revenue_h = pd.Series(current_company["Historic Revenue"])
     revenue_new = pd.concat([revenue_h, pd.Series(revenue)])
     plot_saeulendiagramm(years[10:], revenue_new, "Revenue (in mln USD)")
@@ -529,6 +556,7 @@ st.header("Model Input")
 
 #select company via streamlit 
 select_company = st.radio("Select a company", list(companies.keys())) 
+
 #set current company variable to selected
 current_company = companies[select_company]
 
@@ -603,7 +631,8 @@ TV_ROIC_percent = st.slider(
 )
 st.divider()
 st.header("Model Output")
-# set inputs to the decimal value
+
+# set inputs to the decimal value as we get them in natural numbers
 op_margin_input = op_margin_input_percent / 100
 revenue_growth_start = revenue_growth_start_percent / 100
 revenue_growth_end = revenue_growth_end_percent / 100
