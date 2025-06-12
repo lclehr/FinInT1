@@ -435,7 +435,7 @@ def FCFF_func():
     for row in return_df.index:
         if row not in percent_rows:
             if row not in decimal_rows:
-            return_df.loc[row] = return_df.loc[row].apply(lambda x: f"{round(x):,}")
+                return_df.loc[row] = return_df.loc[row].apply(lambda x: f"{round(x):,}")
     
     # Second Data Frame with the Values for Terminal Value period and the final share price etc.    
     TV_period_Data = [
