@@ -426,13 +426,15 @@ def FCFF_func():
         "Cost of Capital (WACC)",
         "Discount Factor"
     ]
-    
+
+    decimal_rows = [sales_to_capital]
     # Apply formatting to percentage rows
     return_df.loc[percent_rows] = return_df.loc[percent_rows].applymap(lambda x: f"{x:.1%}")
     
     # round other rows to percentages
     for row in return_df.index:
         if row not in percent_rows:
+            if row not in decimal_rows:
             return_df.loc[row] = return_df.loc[row].apply(lambda x: f"{round(x):,}")
     
     # Second Data Frame with the Values for Terminal Value period and the final share price etc.    
