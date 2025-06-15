@@ -12,7 +12,6 @@ from matplotlib.ticker import FuncFormatter
 
 ###############################################################
 
-#st.set_page_config(layout="wide")
 st.title("Reverse FCFF")
 
 # Inject CSS overrides to get colors of our favourite private bank ;)
@@ -194,10 +193,6 @@ companies = {"Microsoft": MSFT,
 #############################################################
 
 def plot_saeulendiagramm(categories, values, title):
-    """
-    Plottet ein Säulendiagramm mit farblicher Hervorhebung der letzten 10 Werte.
-    Verwendet Streamlit zur Anzeige.
-    """
     highlight_count = 10
     total_values = len(values)
     values = values / 1000
