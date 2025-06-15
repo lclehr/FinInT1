@@ -201,40 +201,28 @@ def plot_saeulendiagramm(categories, values, title):
     highlight_count = 10
     total_values = len(values)
     values = values / 1000
-    # Make sure we don't exceed bounds
+
     highlight_count = min(highlight_count, total_values)
     colors = ['green'] * (len(values) - highlight_count) + ['red'] * highlight_count
 
-    # Create figure for Streamlit
     fig, ax = plt.subplots()
     ax.bar(categories, values, color=colors)
     ax.tick_params(axis='both', labelsize=9)
     if title == "ROIC":
         formatter = FuncFormatter(lambda x, _: f'{x*100000:.0f}%')
         ax.yaxis.set_major_formatter(formatter)
-    formatter = FuncFormatter(lambda x, _: int(x))
-    ax.xaxis.set_major_formatter(formatter)
-    ax.set_title(f"{title} (estimated)", fontsize=15, fontweight='normal', pad=10)
+    # Set x-ticks and labels for all categories (years)
+    ax.set_xticks(categories)
     ax.set_xticklabels(categories, rotation=45, ha='right', fontsize=8)
+    ax.set_title(f"{title} (estimated)", fontsize=15, fontweight='normal', pad=10)
     ax.set_ylabel(f"{title}", fontsize=12, fontweight='normal')
-    #ax.grid(axis='y', linestyle='--', alpha=0.7)
-    if all(isinstance(x, (int, float)) for x in categories):
-        # Nur für numerische Jahreswerte
-        xticks = [x for x in categories if int(x) % 5 == 0]
-        ax.set_xticks(xticks)
-    else:
-        # Bei Textwerten z.B. "2020E", muss evtl. anders gefiltert werden
-        xticks = [x for x in categories if x[:4].isdigit() and int(x[:4]) % 5 == 0]
-        ax.set_xticks(xticks)
     plt.tight_layout()
-    #Different colors for the historicals and estimation
     green_patch = mpatches.Patch(color='green', label='Historical Values')
     red_patch = mpatches.Patch(color='red', label='Estimated Values')
-    ax.legend(handles=[green_patch, red_patch], fontsize = 8)
+    ax.legend(handles=[green_patch, red_patch], fontsize=8)
     for spine in ax.spines.values():
         spine.set_visible(False)
-    
-    # Display in Streamlit
+
     st.pyplot(fig)
 
 years = list(range(2005,2025+10))
